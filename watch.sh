@@ -1,7 +1,6 @@
 #!/bin/sh
-set -
-
-trap "exit 0" INT TERM EXIT
+set -e
+set -o pipefail
 
 INPUT=${INPUT:-/scss}
 OUTPUT=${OUTPUT:-/output}

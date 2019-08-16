@@ -11,7 +11,6 @@ version: '3.7'
 services:
   sass-watch:
     image: "gerrit91/scss-watcher"
-    init: true
     container_name: scss-watcher
     user: "${USER_ID}:${GROUP_ID}"
     volumes:
