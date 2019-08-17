@@ -13,6 +13,6 @@ do
     rm -f ${OUTPUT}/${file_name}
   else
     echo "[${event}] ${file_name} has changed, recompiling..."
-    sassc --style compressed ${file_path} > ${OUTPUT}/${file_name}
+    sassc --style compressed ${file_path} > ${OUTPUT}/${file_name} || true
   fi
 done
