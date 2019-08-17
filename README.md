@@ -14,6 +14,8 @@ services:
     container_name: scss-watcher
     user: "${USER_ID}:${GROUP_ID}"
     command: --style compressed
+    environment:
+      INOTIFY_EXTRA_ARGS: "--exclude /\\_.+"
     volumes:
       - "$(PWD)/scss:/scss"
       - "$(PWD)/public/css:/output"

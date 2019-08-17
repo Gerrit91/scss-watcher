@@ -4,9 +4,11 @@ set -o pipefail
 
 INPUT=${INPUT:-/scss}
 OUTPUT=${OUTPUT:-/output}
+INOTIFY_EXTRA_ARGS=${INOTIFY_EXTRA_ARGS}
 
 echo "Watching ${INPUT}"
-inotifywait --monitor --event modify,create,delete,move --format '%:e %w%f %f' "${INPUT}" | while read event file_path file_name
+inotifywait --monitor --event modify,create,delete,move --format '%:e %w%f %f' "${INPUT}" ${INOTIFY_EXTRA_ARGS} |
+while read event file_path file_name
 do
   css_file_name="${file_name%.*}.css"
   if [ "$event" = "DELETE" ]; then
@@ -14,6 +16,6 @@ do
     rm -f ${OUTPUT}/${css_file_name}
   else
     echo "[${event}] ${file_name} has changed, recompiling..."
-    eval sassc "$@" ${file_path} > ${OUTPUT}/${css_file_name} || true
+    sassc "$@" ${file_path} > ${OUTPUT}/${css_file_name} || true
   fi
 done
