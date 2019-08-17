@@ -16,6 +16,6 @@ do
     rm -f ${OUTPUT}/${css_file_name}
   else
     echo "[${event}] ${file_name} has changed, recompiling..."
-    sassc "$@" ${file_path} > ${OUTPUT}/${css_file_name} || true
+    eval sassc "$@" ${file_path} > ${OUTPUT}/${css_file_name} || true
   fi
 done
