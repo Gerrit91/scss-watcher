@@ -13,6 +13,7 @@ services:
     image: "gerrit91/scss-watcher"
     container_name: scss-watcher
     user: "${USER_ID}:${GROUP_ID}"
+    command: --style compressed
     volumes:
       - "$(PWD)/scss:/scss"
       - "$(PWD)/public/css:/output"
