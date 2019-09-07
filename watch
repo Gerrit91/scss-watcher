@@ -24,6 +24,10 @@ def parse_args():
     return parser.parse_args()
 
 
+class CompileException(Exception):
+    pass
+
+
 class Watcher:
     def __init__(self, args):
         self.input = args.input
@@ -53,7 +57,8 @@ class Watcher:
                 print("[MODIFY] %s was modified, recompiling..." % file_name, flush=True)
                 try:
                     output = self._recompile(file_path)
-                except subprocess.CalledProcessError:
+                except CompileException as exception:
+                    print(exception, flush=True)
                     continue
 
                 output_path = self._translate_to_output_path(match, directory)
@@ -66,7 +71,10 @@ class Watcher:
 
     def _recompile(self, file_path):
         cmd = "sassc %s %s" % (self.sassc_args, file_path)
-        return subprocess.getoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
+        if status != 0:
+            raise CompileException(output)
+        return output
 
     def _write_to_dest(self, dest, content):
         directory = os.path.dirname(dest)
