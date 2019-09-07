@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+
+import argparse
+import inotify.adapters
+import os
+import re
+import shutil
+import subprocess
+
+
+DEFAULT_INPUT = os.environ.get("INPUT", "/input")
+DEFAULT_OUTPUT = os.environ.get("OUTPUT", "/output")
+SCSS_FILE_REGEX = os.environ.get("REGEX", r"^(?!_)(.*)\.s.ss$")
+SASSC_ARGS = os.environ.get("SASSC_ARGS", "")
+CSS_EXTENSION = ".css"
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="watch scss files and compile them on the fly")
+    parser.add_argument("-i", "--input", type=str, help="input source", default=DEFAULT_INPUT)
+    parser.add_argument("-o", "--output", type=str, help="output destination", default=DEFAULT_OUTPUT)
+    parser.add_argument("--regex", "-r", type=str, help="the regex for file to pass through to the compiler", default=SCSS_FILE_REGEX)
+    parser.add_argument("--sassc-args", type=str, help="additional arguments for sassc", default=SASSC_ARGS)
+    return parser.parse_args()
+
+
+class Watcher:
+    def __init__(self, args):
+        self.input = args.input
+        self.output = args.output
+        self.watcher = inotify.adapters.InotifyTree(self.input)
+        self.sassc_args = args.sassc_args
+        self.matcher = re.compile(args.regex)
+
+    def watch(self):
+        print("start watching %s" % self.input, flush=True)
+
+        for _, events, directory, file_name in self.watcher.event_gen(yield_nones=False):
+            match = self.matcher.fullmatch(file_name)
+            if not match:
+                continue
+
+            file_path = os.path.join(directory, file_name)
+
+            if "IN_DELETE" in events:
+                print("[DELETE] %s was deleted, removing..." % file_name, flush=True)
+
+                output_path = self._translate_to_output_path(match, directory)
+
+                self._cleanup(output_path)
+
+            elif "IN_MODIFY" in events:
+                print("[MODIFY] %s was modified, recompiling..." % file_name, flush=True)
+                try:
+                    output = self._recompile(file_path)
+                except subprocess.CalledProcessError:
+                    continue
+
+                output_path = self._translate_to_output_path(match, directory)
+
+                self._write_to_dest(output_path, output)
+
+    def _translate_to_output_path(self, match, directory):
+        dest_file_name = match.group(1) + CSS_EXTENSION
+        return os.path.normpath(os.path.join(self.output, os.path.relpath(directory, self.input), dest_file_name))
+
+    def _recompile(self, file_path):
+        cmd = "sassc %s %s" % (self.sassc_args, file_path)
+        return subprocess.getoutput(cmd)
+
+    def _write_to_dest(self, dest, content):
+        directory = os.path.dirname(dest)
+        os.makedirs(directory, exist_ok=True)
+
+        with open(dest, "w") as f:
+            f.write(content)
+
+    def _cleanup(self, file_path):
+        os.remove(file_path)
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    watcher = Watcher(args)
+    watcher.watch()
