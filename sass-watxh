@@ -1,0 +1,11 @@
+version: '3.7'
+services:
+sass-watch:
+  image: "gerrit91/scss-watcher"
+  container_name: scss-watcher
+  user: "${USER_ID}:${GROUP_ID}"
+  environment:
+    SASSC_ARGS: "--style compressed"
+  volumes:
+    - "${SCRIPT_DIRNAME}/../scss:/input"
+    - "${SCRIPT_DIRNAME}/../public/css:/output"
